@@ -1,8 +1,7 @@
 <script setup lang="ts">
   import { useI18n } from "vue-i18n";
   import { route } from "../../lib/api/base";
-  import { CatPrinter } from "./cat-protocol";
-  import { CAT_ADV_SRV, CAT_PRINT_SRV, CAT_PRINT_TX_CHAR, CAT_PRINT_RX_CHAR } from "./constants";
+  import { useCatPrinter } from "../../composables/use-cat-printer";
   import PageQRCode from "./PageQRCode.vue";
   import { toast } from "@/components/ui/sonner";
   import MdiLoading from "~icons/mdi/loading";
@@ -43,8 +42,7 @@
   const serverPrinting = ref(false);
   const bluetoothPrinting = ref(false);
 
-  let printer: CatPrinter | null = null;
-  let device: BluetoothDevice | null = null;
+  const { connectPrinter, printBitmap: doPrintBitmap, rgbaToBits } = useCatPrinter();
 
   // Print head is 384 dots wide; anything wider gets scaled down before printing.
   const PRINTER_WIDTH = 384;
@@ -104,23 +102,6 @@
   }
   type LabelBitmap = { width: number; height: number; data: Uint8Array };
 
-  // Pack RGBA pixels into 1 bit per pixel, LSB-first, 1 = black.
-  // Inlined because the SDK's package exports map has no "types" condition,
-  // so importing its rgbaToBits resolves at runtime but not for typecheck.
-  function rgbaToBits(rgba: Uint32Array, threshold: number): Uint8Array {
-    const out = new Uint8Array(Math.ceil(rgba.length / 8));
-    for (let i = 0; i < rgba.length; i++) {
-      const px = rgba[i];
-      const r = px & 0xff;
-      const g = (px >> 8) & 0xff;
-      const b = (px >> 16) & 0xff;
-      if ((r + g + b) / 3 < threshold) {
-        out[i >> 3] |= 1 << i % 8;
-      }
-    }
-    return out;
-  }
-
   // Render the label PNG into a 1-bit bitmap sized exactly for the print head.
   async function labelToBitmap(): Promise<LabelBitmap> {
     // Fetch through the app origin so the session cookie authenticates the request.
@@ -173,51 +154,6 @@
     }
   }
 
-  // Connect over Web Bluetooth and drive cat-protocol.ts over the GATT TX
-  // characteristic. The @opuu SDK is not used for printing: it parses the
-  // printer's "paused" (buffer-full) flag but never waits on it, and never
-  // sends the Lattice begin/end markers, so a tall bitmap overruns the device
-  // FIFO partway through and the remaining rows collapse together.
-  async function connectPrinter(): Promise<CatPrinter> {
-    if (printer && device?.gatt?.connected) {
-      return printer;
-    }
-
-    if (!navigator.bluetooth) {
-      throw new Error("Bluetooth API is not available in this browser");
-    }
-
-    device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [CAT_ADV_SRV] }],
-      optionalServices: [CAT_PRINT_SRV],
-    });
-
-    const server = await device.gatt!.connect();
-    const service = await server.getPrimaryService(CAT_PRINT_SRV);
-    const tx = await service.getCharacteristic(CAT_PRINT_TX_CHAR);
-    const rx = await service.getCharacteristic(CAT_PRINT_RX_CHAR);
-
-    const instance = new CatPrinter(device.name ?? "", data => tx.writeValueWithoutResponse(data as BufferSource));
-
-    // Feed notifications back in so flush() can block while the printer is
-    // paused. This is the backpressure the squeezed output was missing.
-    await rx.startNotifications();
-    rx.addEventListener("characteristicvaluechanged", event => {
-      const value = (event.target as BluetoothRemoteGATTCharacteristic).value;
-      if (value) {
-        instance.notify(new Uint8Array(value.buffer));
-      }
-    });
-
-    device.addEventListener("gattserverdisconnected", () => {
-      printer = null;
-      device = null;
-    });
-
-    printer = instance;
-    return instance;
-  }
-
   const bluetoothPrint = async () => {
     if (bluetoothPrinting.value) {
       return;
@@ -232,14 +168,7 @@
       // endLattice plus the trailing feed.
       await cat.prepare(PRINT_SPEED, PRINT_ENERGY);
 
-      const bytesPerRow = Math.ceil(bitmap.width / 8);
-      for (let row = 0; row < bitmap.height; row++) {
-        const start = row * bytesPerRow;
-        // Send every row, blank ones included: dropping them is what
-        // compresses the label vertically. draw() buffers to the MTU and
-        // flush() waits while the printer reports paused.
-        await cat.draw(bitmap.data.slice(start, start + bytesPerRow));
-      }
+      await doPrintBitmap(cat, bitmap);
 
       await cat.finish(FINISH_FEED);
 
