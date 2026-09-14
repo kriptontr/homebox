@@ -1,4 +1,9 @@
 {
   // https://v3.nuxtjs.org/concepts/typescript
-  "extends": "./.nuxt/tsconfig.json"
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    // Web Bluetooth is not part of the default DOM lib; the label maker talks
+    // to cat printers through navigator.bluetooth.
+    "types": ["@types/web-bluetooth"]
+  }
 }

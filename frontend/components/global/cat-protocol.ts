@@ -183,7 +183,7 @@ export class CatPrinter {
     return this.send(this.make(Command.UpdateDevice, bytes(0x00)));
   }
 
-  setDpi(_dpi = 200) {
+  setDpi() {
     return this.send(this.make(Command.SetDpi, bytes(50)));
   }
 
@@ -192,7 +192,7 @@ export class CatPrinter {
       this.make(Command.Lattice, new Uint8Array([0xaa, 0x55, 0x17, 0x38, 0x44, 0x5f, 0x5f, 0x5f, 0x44, 0x38, 0x2c]))
     );
   }
-  
+
   endLattice() {
     return this.send(
       this.make(Command.Lattice, new Uint8Array([0xaa, 0x55, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17]))

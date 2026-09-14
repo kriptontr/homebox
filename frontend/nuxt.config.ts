@@ -22,7 +22,7 @@ export default defineNuxtConfig({
       "/api": {
         target: "http://localhost:7745/api",
         ws: true,
-        changeOrigin: true,
+        changeOrigin: false,
       },
     },
   },

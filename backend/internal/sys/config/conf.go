@@ -60,8 +60,8 @@ type WebConfig struct {
 }
 
 type LabelMakerConf struct {
-	Width                 int64   `yaml:"width"     conf:"default:526"`
-	Height                int64   `yaml:"height"    conf:"default:320"`
+	Width                 int64   `yaml:"width"     conf:"default:384"`
+	Height                int64   `yaml:"height"    conf:"default:200"`
 	Padding               int64   `yaml:"padding"   conf:"default:8"`
 	Margin                int64   `yaml:"margin"    conf:"default:0"`
 	FontSize              float64 `yaml:"font_size" conf:"default:32.0"`
