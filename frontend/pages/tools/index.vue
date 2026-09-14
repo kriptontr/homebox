@@ -24,6 +24,14 @@
             {{ $t("tools.reports_set.bill_of_materials_sub") }}
             <template #button> {{ $t("tools.reports_set.bill_of_materials_button") }} </template>
           </DetailAction>
+          <DetailAction to="/tools/cat-printer">
+            <template #title>{{ $t("menu.cat_printer") || "Cat Printer" }}</template>
+            Print custom text directly to your bluetooth thermal printer
+            <template #button>
+              Open Printer
+              <MdiArrowRight class="ml-2" />
+            </template>
+          </DetailAction>
         </div>
       </BaseCard>
       <BaseCard>
