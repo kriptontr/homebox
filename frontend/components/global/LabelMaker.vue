@@ -1,12 +1,28 @@
 <script setup lang="ts">
   import { useI18n } from "vue-i18n";
   import { route } from "../../lib/api/base";
+  // import {
+  //   CAT_ADV_SRV,
+  //   CAT_PRINT_RX_CHAR,
+  //   CAT_PRINT_SRV,
+  //   CAT_PRINT_TX_CHAR,
+  //   DEF_CANVAS_WIDTH,
+  //   DEF_CANVAS_HEIGHT,
+  //   DEF_ENERGY,
+  //   DEF_FINISH_FEED,
+  //   DEF_SPEED,
+  //   // STUFF_PAINT_INIT_URL,
+  //   // DEF_SPEED,
+  //   // STUFF_PAINT_INIT_URL,
+  // } from "./constants.ts";
+  // import { CatPrinter } from "./cat-protocol";
+  // import { CatPrinter } from 'cat-printer';
+  // const printer = new CatPrinter({ debug: true });
   import PageQRCode from "./PageQRCode.vue";
   import { toast } from "@/components/ui/sonner";
   import MdiLoading from "~icons/mdi/loading";
   import MdiPrinterPos from "~icons/mdi/printer-pos";
   import MdiFileDownload from "~icons/mdi/file-download";
-
   import {
     Dialog,
     DialogContent,
@@ -40,6 +56,17 @@
   });
 
   const serverPrinting = ref(false);
+
+  function rgbaToBits(data: Uint32Array) {
+    const length = (data.length / 8) | 0;
+    const result = new Uint8Array(length);
+    for (let i = 0, p = 0; i < data.length; ++p) {
+      result[p] = 0;
+      for (let d = 0; d < 8; ++i, ++d) result[p] |= data[i] & 0xff & (0b1 << d);
+      result[p] ^= 0b11111111;
+    }
+    return result;
+  }
 
   function browserPrint() {
     const printWindow = window.open(getLabelUrl(false), "popup=true");
@@ -89,7 +116,58 @@
       throw new Error(`Unexpected labelmaker type ${props.type}`);
     }
   }
-</script>
+  function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  const bluetoothPrint = async () => {
+    // debugger;
+     try {
+                /*
+                if (!printer.isConnected()) {
+                        await printer.connect();
+                        console.log('Connected to printer!');
+                } else {
+                        console.log('Printer already connected.');
+                }
+
+                
+                // Print text with custom options
+                // await printer.printText('', { 
+                //         fontSize: 24, 
+                //         fontWeight: 'bold',
+                //         align: 'center',
+                //         lineSpacing: 8
+                // });
+                
+                await printer.retract(30);
+                const url = getLabelUrl(false);
+                // Print an image using Floyd-Steinberg dithering
+                await printer.printImage(url, {
+                        dither: `threshold`,
+                        brightness: 135,
+                        offset: 10,
+                        // flipV: true,
+                        // rotate: 90,
+                });
+                
+                // Feed the paper to finalize the printing job
+                await printer.feed(80);
+                */
+                
+                // Disconnect when the job is done
+                // await printer.disconnect();
+                console.log("Bluetooth printing disabled due to missing dependency");
+        } catch (error) {
+                console.error('Error during printing:', error);
+        }
+  };
+
+  function concatArrays(bitmap: Uint8Array, emptyline: Uint8Array): Uint8Array {
+    const result = new Uint8Array(bitmap.length + emptyline.length);
+    result.set(bitmap, 0);
+    result.set(emptyline, bitmap.length);
+    return result;
+  } </script>
 
 <template>
   <div>
@@ -109,6 +187,9 @@
             <Button v-if="status?.labelPrinting || false" type="submit" :disabled="serverPrinting" @click="serverPrint">
               <MdiLoading v-if="serverPrinting" class="animate-spin" />
               {{ $t("components.global.label_maker.server_print") }}
+            </Button>
+            <Button type="submit" @click="bluetoothPrint">
+              {{ $t("components.global.label_maker.bluetooth_print") }}
             </Button>
             <Button type="submit" @click="browserPrint">
               {{ $t("components.global.label_maker.browser_print") }}

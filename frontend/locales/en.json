@@ -69,6 +69,7 @@
             },
             "label_maker": {
                 "browser_print": "Print from Browser",
+                "bluetooth_print": "Print via Bluetooth",
                 "confirm_description": "Are you sure you want to print this label?",
                 "download": "Download Label",
                 "print": "Print label",
