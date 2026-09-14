@@ -180,6 +180,7 @@
   import MdiAccount from "~icons/mdi/account";
   import MdiCog from "~icons/mdi/cog";
   import MdiWrench from "~icons/mdi/wrench";
+  import MdiPrinterPos from "~icons/mdi/printer-pos";
   import MdiPlus from "~icons/mdi/plus";
   import MdiLogout from "~icons/mdi/logout";
 
@@ -328,6 +329,13 @@
       active: computed(() => route.path === "/tools"),
       name: computed(() => t("menu.tools")),
       to: "/tools",
+    },
+    {
+      icon: MdiPrinterPos,
+      id: 6,
+      active: computed(() => route.path === "/tools/cat-printer"),
+      name: computed(() => t("menu.cat_printer") || "Cat Printer"),
+      to: "/tools/cat-printer",
     },
   ];
 
