@@ -1,8 +1,6 @@
 module github.com/sysadminsmedia/homebox/backend
 
-go 1.24
-
-toolchain go1.24.3
+go 1.25.5
 
 require (
 	entgo.io/ent v0.14.4
@@ -20,6 +18,7 @@ require (
 	github.com/gorilla/schema v1.4.1
 	github.com/hay-kot/httpkit v0.0.11
 	github.com/lib/pq v1.10.9
+	github.com/mark3labs/mcp-go v1.0.0
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/olahol/melody v1.2.1
 	github.com/pkg/errors v0.9.1
@@ -27,7 +26,7 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/shirou/gopsutil/v4 v4.25.5
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/http-swagger/v2 v2.0.2
 	github.com/swaggo/swag v1.16.4
 	github.com/yeqown/go-qrcode/v2 v2.2.5
@@ -122,6 +121,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/jsonschema-go v0.4.2 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/wire v0.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
@@ -160,12 +160,15 @@ require (
 	github.com/rabbitmq/amqp091-go v1.10.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
 	github.com/tetratelabs/wazero v1.9.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
+	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zclconf/go-cty v1.14.4 // indirect
 	github.com/zclconf/go-cty-yaml v1.1.0 // indirect

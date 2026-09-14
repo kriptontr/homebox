@@ -48,6 +48,8 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 	// =========================================================================
 	// API Version 1
 
+	mcpCtrl := v1.NewMCPController(a.services, a.repos)
+
 	v1Ctrl := v1.NewControllerV1(
 		a.services,
 		a.repos,
@@ -170,6 +172,18 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 
 		// Reporting Services
 		r.Get("/reporting/bill-of-materials", chain.ToHandlerFunc(v1Ctrl.HandleBillOfMaterialsExport(), userMW...))
+
+		// MCP Server
+		mcpSSE := func(w http.ResponseWriter, r *http.Request) error {
+			mcpCtrl.HandleSSE(w, r)
+			return nil
+		}
+		mcpMessage := func(w http.ResponseWriter, r *http.Request) error {
+			mcpCtrl.HandleMessage(w, r)
+			return nil
+		}
+		r.Get("/mcp/sse", chain.ToHandlerFunc(mcpSSE, userMW...))
+		r.Post("/mcp/message", chain.ToHandlerFunc(mcpMessage, userMW...))
 
 		r.NotFound(http.NotFound)
 	})
