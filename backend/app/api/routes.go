@@ -83,6 +83,9 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		}
 
 		r.Get("/ws/events", chain.ToHandlerFunc(v1Ctrl.HandleCacheWS(), userMW...))
+		r.Get("/ws/printers", chain.ToHandlerFunc(v1Ctrl.HandlePrintersWS(), userMW...))
+		r.Get("/printers", chain.ToHandlerFunc(v1Ctrl.HandlePrintersGetAll(), userMW...))
+		r.Post("/printers/{id}/print", chain.ToHandlerFunc(v1Ctrl.HandlePrinterPrint(), userMW...))
 		r.Get("/users/self", chain.ToHandlerFunc(v1Ctrl.HandleUserSelf(), userMW...))
 		r.Put("/users/self", chain.ToHandlerFunc(v1Ctrl.HandleUserSelfUpdate(), userMW...))
 		r.Delete("/users/self", chain.ToHandlerFunc(v1Ctrl.HandleUserSelfDelete(), userMW...))

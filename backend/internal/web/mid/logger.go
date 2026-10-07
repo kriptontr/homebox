@@ -20,6 +20,12 @@ func (s *spy) WriteHeader(status int) {
 	s.ResponseWriter.WriteHeader(status)
 }
 
+// Unwrap lets http.ResponseController reach the underlying writer
+// (e.g. to extend write deadlines for long-running requests).
+func (s *spy) Unwrap() http.ResponseWriter {
+	return s.ResponseWriter
+}
+
 func (s *spy) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	hj, ok := s.ResponseWriter.(http.Hijacker)
 	if !ok {

@@ -11,6 +11,7 @@ import (
 	"github.com/hay-kot/httpkit/server"
 	"github.com/rs/zerolog/log"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/services/printrelay"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services/reporting/eventbus"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/config"
@@ -58,6 +59,13 @@ func WithSecureCookies(secure bool) func(*V1Controller) {
 	}
 }
 
+// WithPrintRelay overrides the print relay hub used to share printers between clients.
+func WithPrintRelay(hub *printrelay.Hub) func(*V1Controller) {
+	return func(ctrl *V1Controller) {
+		ctrl.printRelay = hub
+	}
+}
+
 func WithURL(url string) func(*V1Controller) {
 	return func(ctrl *V1Controller) {
 		ctrl.url = url
@@ -74,6 +82,7 @@ type V1Controller struct {
 	bus               *eventbus.EventBus
 	url               string
 	config            *config.Config
+	printRelay        *printrelay.Hub
 }
 
 type (
@@ -105,6 +114,7 @@ func NewControllerV1(svc *services.AllServices, repos *repo.AllRepos, bus *event
 		allowRegistration: true,
 		bus:               bus,
 		config:            config,
+		printRelay:        printrelay.NewHub(printrelay.DefaultJobTimeout),
 	}
 
 	for _, opt := range options {
