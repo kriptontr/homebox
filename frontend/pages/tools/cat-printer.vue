@@ -40,6 +40,8 @@
         </div>
       </div>
     </BaseCard>
+
+    <PrinterShareCard />
   </BaseContainer>
 </template>
 

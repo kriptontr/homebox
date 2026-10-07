@@ -180,6 +180,30 @@
                 "no_locations": "No locations available. Add new locations through the\n `<`span class=\"link-primary\"`>`Create`<`/span`>` button on the navigation bar."
             }
         },
+        "printer": {
+            "share": {
+                "description": "Let other devices in your group print to this Bluetooth printer",
+                "jobs_failed": "{count} failed",
+                "jobs_printed": "Jobs printed",
+                "keep_open": "This tab must stay open (and the printer connected) for other devices to print. Sharing stops when the tab is closed or the printer disconnects.",
+                "last_error": "Last error",
+                "no_printer": "Not connected",
+                "printer": "Printer",
+                "state": {
+                    "connecting": "Connecting...",
+                    "off": "Not shared",
+                    "printing": "Printing...",
+                    "sharing": "Sharing"
+                },
+                "status": "Status",
+                "title": "Share Printer",
+                "toast": {
+                    "start_failed": "Failed to start sharing the printer",
+                    "started": "Printer is now shared with your group"
+                },
+                "toggle": "Share this printer with other devices"
+            }
+        },
         "quick_menu": {
             "no_results": "No results found.",
             "shortcut_hint": "Use the number keys to quickly select an action."
