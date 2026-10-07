@@ -2,6 +2,8 @@
   import { useI18n } from "vue-i18n";
   import { route } from "../../lib/api/base";
   import { useCatPrinter } from "../../composables/use-cat-printer";
+  import { useSharedPrinters } from "../../composables/use-shared-printers";
+  import type { LabelPrintJob } from "../../lib/api/classes/printers";
   import PageQRCode from "./PageQRCode.vue";
   import { toast } from "@/components/ui/sonner";
   import MdiLoading from "~icons/mdi/loading";
@@ -18,9 +20,10 @@
   import { useDialog } from "@/components/ui/dialog-provider";
   import { Button, ButtonGroup } from "@/components/ui/button";
   import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
   const { t } = useI18n();
-  const { openDialog, closeDialog } = useDialog();
+  const { openDialog, closeDialog, activeDialog } = useDialog();
 
   const props = defineProps<{
     type: string;
@@ -42,15 +45,48 @@
   const serverPrinting = ref(false);
   const bluetoothPrinting = ref(false);
 
-  const { connectPrinter, printBitmap: doPrintBitmap, rgbaToBits } = useCatPrinter();
+  const { connectPrinter, printJobBitmap, rgbaToBits } = useCatPrinter();
+
+  const {
+    printers: sharedPrinters,
+    selectedId: selectedPrinterId,
+    sending: remotePrinting,
+    refresh: refreshSharedPrinters,
+    print: printOnShared,
+  } = useSharedPrinters();
+
+  // Printers come and go as hosts connect, so reload the list each time the dialog opens.
+  watch(
+    () => activeDialog.value === "print-label",
+    open => {
+      if (open) {
+        refreshSharedPrinters();
+      }
+    }
+  );
+
+  function isLabelType(type: string): type is LabelPrintJob["labelType"] {
+    return type === "item" || type === "location" || type === "asset";
+  }
+
+  async function remotePrint() {
+    if (remotePrinting.value || !isLabelType(props.type)) {
+      return;
+    }
+
+    const result = await printOnShared({ kind: "label", labelType: props.type, id: props.id });
+    if (result.ok) {
+      toast.success(t("components.global.label_maker.toast.print_success"));
+      closeDialog("print-label");
+    } else {
+      toast.error(result.message || t("components.global.label_maker.toast.print_failed"));
+    }
+  }
 
   // Print head is 384 dots wide; anything wider gets scaled down before printing.
   const PRINTER_WIDTH = 384;
   const QUIET_ZONE_ROWS = 24;
   const BLACK_THRESHOLD = 170;
-  const PRINT_SPEED = 32;
-  const PRINT_ENERGY = 24000;
-  const FINISH_FEED = 80;
 
   function browserPrint() {
     const printWindow = window.open(getLabelUrl(false), "popup=true");
@@ -161,16 +197,9 @@
     bluetoothPrinting.value = true;
 
     try {
-      const cat = await connectPrinter();
-      const bitmap = await labelToBitmap();
-
-      // prepare() sends speed/energy and startLattice; finish() sends
-      // endLattice plus the trailing feed.
-      await cat.prepare(PRINT_SPEED, PRINT_ENERGY);
-
-      await doPrintBitmap(cat, bitmap);
-
-      await cat.finish(FINISH_FEED);
+      // Connect first so the device picker still has the click's user gesture.
+      await connectPrinter();
+      await printJobBitmap(await labelToBitmap());
 
       toast.success(t("components.global.label_maker.toast.print_success"));
       closeDialog("print-label");
@@ -196,7 +225,23 @@
           </DialogDescription>
         </DialogHeader>
         <img :src="getLabelUrl(false)" />
-        <DialogFooter>
+        <DialogFooter class="flex-col gap-2 sm:flex-col sm:items-end">
+          <div v-if="sharedPrinters.length > 0" class="flex flex-wrap items-center gap-2">
+            <Select v-if="sharedPrinters.length > 1" v-model="selectedPrinterId" :disabled="remotePrinting">
+              <SelectTrigger class="w-auto min-w-48">
+                <SelectValue :placeholder="$t('components.printer.remote.select_printer')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="p in sharedPrinters" :key="p.id" :value="p.id">
+                  {{ $t("components.printer.remote.printer_option", { name: p.name, sharedBy: p.sharedBy }) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Button type="button" :disabled="remotePrinting || !selectedPrinterId" @click="remotePrint">
+              <MdiLoading v-if="remotePrinting" class="animate-spin" />
+              {{ $t("components.global.label_maker.shared_print") }}
+            </Button>
+          </div>
           <ButtonGroup>
             <Button v-if="status?.labelPrinting || false" type="submit" :disabled="serverPrinting" @click="serverPrint">
               <MdiLoading v-if="serverPrinting" class="animate-spin" />

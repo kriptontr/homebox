@@ -27,10 +27,21 @@ export function rgbaToBits(rgba: Uint32Array, threshold: number): Uint8Array {
   return out;
 }
 
-export function useCatPrinter() {
-  const printer = ref<CatPrinter | null>(null);
-  let device: BluetoothDevice | null = null;
+// One Bluetooth connection per tab, shared by every caller (label dialog, text
+// page, printer sharing), so they never race each other on the same device.
+const printer = ref<CatPrinter | null>(null);
+let device: BluetoothDevice | null = null;
 
+// Serialises whole print jobs; interleaved rows from two jobs garble both.
+let printQueue: Promise<unknown> = Promise.resolve();
+
+function withPrintLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = printQueue.then(fn, fn);
+  printQueue = run.catch(() => undefined);
+  return run;
+}
+
+export function useCatPrinter() {
   async function connectPrinter(): Promise<CatPrinter> {
     if (printer.value && device?.gatt?.connected) {
       return printer.value;
@@ -90,11 +101,14 @@ export function useCatPrinter() {
 
   // Full print sequence for one bitmap: connect, prepare (speed/energy +
   // startLattice), stream rows, then finish (endLattice + trailing feed).
+  // Connect before taking the lock so the device picker still has the user gesture.
   async function printJobBitmap(bitmap: LabelBitmap): Promise<void> {
     const cat = await connectPrinter();
-    await cat.prepare(PRINT_SPEED, PRINT_ENERGY);
-    await printBitmap(cat, bitmap);
-    await cat.finish(FINISH_FEED);
+    await withPrintLock(async () => {
+      await cat.prepare(PRINT_SPEED, PRINT_ENERGY);
+      await printBitmap(cat, bitmap);
+      await cat.finish(FINISH_FEED);
+    });
   }
 
   return {

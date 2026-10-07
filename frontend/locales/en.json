@@ -74,6 +74,7 @@
                 "download": "Download Label",
                 "print": "Print label",
                 "server_print": "Print on Server",
+                "shared_print": "Print on shared printer",
                 "titles": "Labels",
                 "toast": {
                     "load_status_failed": "Failed to load status",
@@ -181,6 +182,11 @@
             }
         },
         "printer": {
+            "remote": {
+                "print": "Print on shared printer",
+                "printer_option": "{name} (shared by {sharedBy})",
+                "select_printer": "Select a printer"
+            },
             "share": {
                 "description": "Let other devices in your group print to this Bluetooth printer",
                 "jobs_failed": "{count} failed",

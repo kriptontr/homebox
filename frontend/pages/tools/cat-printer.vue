@@ -31,12 +31,36 @@
           </Select>
         </div>
 
-        <div class="flex gap-4 pt-4">
-          <Button :disabled="printing || !text.trim()" @click="printText">
+        <div class="flex flex-wrap items-center gap-4 pt-4">
+          <Button :disabled="printing || remotePrinting || !text.trim()" @click="printText">
             <MdiLoading v-if="printing" class="mr-2 animate-spin" />
             <MdiPrinterPos v-else class="mr-2" />
             Print via Bluetooth
           </Button>
+
+          <template v-if="sharedPrinters.length > 0">
+            <Select v-if="sharedPrinters.length > 1" v-model="selectedPrinterId" :disabled="remotePrinting">
+              <SelectTrigger class="w-auto min-w-48">
+                <SelectValue :placeholder="$t('components.printer.remote.select_printer')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem v-for="p in sharedPrinters" :key="p.id" :value="p.id">
+                    {{ $t("components.printer.remote.printer_option", { name: p.name, sharedBy: p.sharedBy }) }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="secondary"
+              :disabled="printing || remotePrinting || !selectedPrinterId || !text.trim()"
+              @click="printTextRemote"
+            >
+              <MdiLoading v-if="remotePrinting" class="mr-2 animate-spin" />
+              <MdiPrinterPos v-else class="mr-2" />
+              {{ $t("components.printer.remote.print") }}
+            </Button>
+          </template>
         </div>
       </div>
     </BaseCard>
@@ -49,7 +73,9 @@
   import { ref } from "vue";
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
-  import { useCatPrinter } from "~/composables/use-cat-printer";
+  import { BLACK_THRESHOLD, PRINTER_WIDTH, useCatPrinter } from "~/composables/use-cat-printer";
+  import { useSharedPrinters } from "~/composables/use-shared-printers";
+  import { bitmapToBase64 } from "~~/lib/api/classes/printers";
   import MdiPrinter from "~icons/mdi/printer";
   import MdiPrinterPos from "~icons/mdi/printer-pos";
   import MdiLoading from "~icons/mdi/loading";
@@ -71,13 +97,19 @@
   const fontSize = ref("48");
   const printing = ref(false);
 
-  const { connectPrinter, printBitmap, rgbaToBits } = useCatPrinter();
+  const { printJobBitmap, rgbaToBits } = useCatPrinter();
 
-  const PRINTER_WIDTH = 384;
-  const BLACK_THRESHOLD = 170;
-  const PRINT_SPEED = 32;
-  const PRINT_ENERGY = 24000;
-  const FINISH_FEED = 80;
+  const {
+    printers: sharedPrinters,
+    selectedId: selectedPrinterId,
+    sending: remotePrinting,
+    refresh: refreshSharedPrinters,
+    print: printOnShared,
+  } = useSharedPrinters();
+
+  onMounted(() => {
+    refreshSharedPrinters();
+  });
 
   function generateTextBitmap(textStr: string, size: number) {
     const canvas = document.createElement("canvas");
@@ -117,7 +149,8 @@
       wrappedLines.push(currentLine);
     }
 
-    const totalHeight = padding * 2 + wrappedLines.length * lineHeight;
+    // Canvas dimensions are integers; round explicitly so height matches the bitmap.
+    const totalHeight = Math.ceil(padding * 2 + wrappedLines.length * lineHeight);
     canvas.height = totalHeight;
 
     // Second pass: Draw text
@@ -142,17 +175,16 @@
     };
   }
 
+  function currentBitmap() {
+    return generateTextBitmap(text.value, parseInt(fontSize.value, 10));
+  }
+
   async function printText() {
     if (printing.value) return;
     printing.value = true;
 
     try {
-      const cat = await connectPrinter();
-      const bitmap = await generateTextBitmap(text.value, parseInt(fontSize.value, 10));
-
-      await cat.prepare(PRINT_SPEED, PRINT_ENERGY);
-      await printBitmap(cat, bitmap);
-      await cat.finish(FINISH_FEED);
+      await printJobBitmap(currentBitmap());
 
       toast.success(t("components.global.label_maker.toast.print_success") || "Printed successfully");
     } catch (error) {
@@ -160,6 +192,32 @@
       toast.error(t("components.global.label_maker.toast.print_failed") || "Failed to print");
     } finally {
       printing.value = false;
+    }
+  }
+
+  async function printTextRemote() {
+    if (remotePrinting.value || !text.value.trim()) return;
+
+    let bitmap;
+    try {
+      bitmap = currentBitmap();
+    } catch (error) {
+      console.error("Error rendering text:", error);
+      toast.error(t("components.global.label_maker.toast.print_failed"));
+      return;
+    }
+
+    const result = await printOnShared({
+      kind: "bitmap",
+      width: bitmap.width,
+      height: bitmap.height,
+      data: bitmapToBase64(bitmap.data),
+    });
+
+    if (result.ok) {
+      toast.success(t("components.global.label_maker.toast.print_success"));
+    } else {
+      toast.error(result.message || t("components.global.label_maker.toast.print_failed"));
     }
   }
 </script>
