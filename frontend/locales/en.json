@@ -74,6 +74,7 @@
                 "download": "Download Label",
                 "print": "Print label",
                 "server_print": "Print on Server",
+                "shared_print": "Print on shared printer",
                 "titles": "Labels",
                 "toast": {
                     "load_status_failed": "Failed to load status",
@@ -178,6 +179,13 @@
             },
             "tree": {
                 "no_locations": "No locations available. Add new locations through the\n `<`span class=\"link-primary\"`>`Create`<`/span`>` button on the navigation bar."
+            }
+        },
+        "printer": {
+            "remote": {
+                "print": "Print on shared printer",
+                "printer_option": "{name} (shared by {sharedBy})",
+                "select_printer": "Select a printer"
             }
         },
         "quick_menu": {
