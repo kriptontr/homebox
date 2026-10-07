@@ -4,6 +4,14 @@ import { CAT_ADV_SRV, CAT_PRINT_SRV, CAT_PRINT_TX_CHAR, CAT_PRINT_RX_CHAR } from
 
 export type LabelBitmap = { width: number; height: number; data: Uint8Array };
 
+// Print head is 384 dots wide; anything wider gets scaled down before printing.
+export const PRINTER_WIDTH = 384;
+export const QUIET_ZONE_ROWS = 24;
+export const BLACK_THRESHOLD = 170;
+export const PRINT_SPEED = 32;
+export const PRINT_ENERGY = 24000;
+export const FINISH_FEED = 80;
+
 // Pack RGBA pixels into 1 bit per pixel, LSB-first, 1 = black.
 export function rgbaToBits(rgba: Uint32Array, threshold: number): Uint8Array {
   const out = new Uint8Array(Math.ceil(rgba.length / 8));
@@ -80,9 +88,20 @@ export function useCatPrinter() {
     }
   }
 
+  // Full print sequence for one bitmap: connect, prepare (speed/energy +
+  // startLattice), stream rows, then finish (endLattice + trailing feed).
+  async function printJobBitmap(bitmap: LabelBitmap): Promise<void> {
+    const cat = await connectPrinter();
+    await cat.prepare(PRINT_SPEED, PRINT_ENERGY);
+    await printBitmap(cat, bitmap);
+    await cat.finish(FINISH_FEED);
+  }
+
   return {
+    printer,
     connectPrinter,
     printBitmap,
+    printJobBitmap,
     rgbaToBits,
   };
 }
